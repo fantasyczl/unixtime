@@ -1,21 +1,34 @@
 package main
 
-import "os"
-import "fmt"
-import "time"
-import "strconv"
-import "strings"
+import (
+	"flag"
+	"fmt"
+	"strconv"
+	"strings"
+	"time"
+)
 
 func main() {
+	var d = flag.String("date", "", "date string")
+	flag.Parse()
+
+	if *d != "" {
+		convertDateString(*d)
+	} else {
+		// 处理时间戳
+		if len(flag.Args()) == 0 {
+			fmt.Printf("lack timestamp")
+			return
+		}
+
+		convertUnixTimestamp(flag.Arg(0))
+	}
+}
+
+func convertUnixTimestamp(str string) {
 	const NANO = 1e9
 
-	if len(os.Args) < 2 {
-		fmt.Println("lack arguemnt")
-		os.Exit(1)
-	}
-
-	var str, secondStr, nanoStr string
-	str = os.Args[1]
+	var secondStr, nanoStr string
 
 	if strings.Contains(str, ".") {
 		str = strings.ReplaceAll(str, ".", "")
@@ -50,4 +63,21 @@ func main() {
 
 	tm := time.Unix(second, nano)
 	fmt.Printf("date: %v\n", tm)
+}
+
+func convertDateString(dateStr string) {
+	loc, err := time.LoadLocation("Asia/Shanghai")
+	if err != nil {
+		fmt.Printf("LoadLocation failed, %s\n", err)
+		return
+	}
+
+	t, err := time.ParseInLocation("2006-01-02 15:04:05", dateStr, loc)
+	if err != nil {
+		fmt.Printf("parse time failed, %s\n", err)
+		return
+	}
+
+	fmt.Printf("time:\n\t%s\n", t)
+	fmt.Printf("unix:\n\t%d\n", t.Unix())
 }
