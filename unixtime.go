@@ -18,6 +18,7 @@ func main() {
 		// 处理时间戳
 		if len(flag.Args()) == 0 {
 			fmt.Printf("lack timestamp")
+			printNow()
 			return
 		}
 
@@ -80,4 +81,9 @@ func convertDateString(dateStr string) {
 
 	fmt.Printf("time:\n\t%s\n", t)
 	fmt.Printf("unix:\n\t%d\n", t.Unix())
+}
+
+func printNow() {
+	ts := time.Now()
+	fmt.Printf("\nnow:\n%s\nts: %d\n", ts, ts.Unix())
 }
