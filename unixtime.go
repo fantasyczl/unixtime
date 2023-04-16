@@ -3,26 +3,35 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 )
 
+var (
+	isVerbose = false
+)
+
 func main() {
 	var d = flag.String("date", "", "date string")
+	var v = flag.Bool("v", false, "verbose")
 	flag.Parse()
 
-	if *d != "" {
-		convertDateString(*d)
-	} else {
-		// 处理时间戳
-		if len(flag.Args()) == 0 {
-			fmt.Printf("lack timestamp")
-			printNow()
-			return
-		}
+	isVerbose = *v
 
+	switch {
+	case *d != "":
+		if *d == "now" {
+			printNow()
+		} else {
+			convertDateString(*d)
+		}
+	case len(flag.Args()) > 0:
 		convertUnixTimestamp(flag.Arg(0))
+	default:
+		// read from stdin
+		readFromStdin()
 	}
 }
 
@@ -42,8 +51,10 @@ func convertUnixTimestamp(str string) {
 		nanoStr = str[10:]
 	}
 
-	fmt.Printf("secondStr: %v\n", secondStr)
-	fmt.Printf("nanoStr: %v\n", nanoStr)
+	if isVerbose {
+		fmt.Printf("secondStr: %v\n", secondStr)
+		fmt.Printf("nanoStr: %v\n", nanoStr)
+	}
 
 	second, err := strconv.ParseInt(secondStr, 10, 64)
 
@@ -60,10 +71,8 @@ func convertUnixTimestamp(str string) {
 		nano = int64(nanoFloat * NANO)
 	}
 
-	fmt.Printf("nano: %v\n", nano)
-
 	tm := time.Unix(second, nano)
-	fmt.Printf("date: %v\n", tm)
+	fmt.Printf("date: %v\tnano: %v\n", tm, nano)
 }
 
 func convertDateString(dateStr string) {
@@ -86,4 +95,26 @@ func convertDateString(dateStr string) {
 func printNow() {
 	ts := time.Now()
 	fmt.Printf("\nnow:\n%s\nts: %d\n", ts, ts.Unix())
+}
+
+func readFromStdin() {
+	buf := make([]byte, 1024)
+	for {
+		n, err := os.Stdin.Read(buf)
+		if err != nil {
+			fmt.Printf("read from stdin failed, %s\n", err)
+			return
+		}
+
+		if n == 0 {
+			break
+		}
+
+		for i := 0; i < n; i++ {
+			if buf[i] == '\n' || buf[i] == '\r' {
+				line := string(buf[0:i])
+				convertUnixTimestamp(line)
+			}
+		}
+	}
 }
