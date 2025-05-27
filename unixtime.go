@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -25,7 +26,7 @@ func main() {
 		if *d == "now" {
 			printNow()
 		} else {
-			convertDateString(*d)
+			convertDateFromString(*d)
 		}
 	case len(flag.Args()) > 0:
 		convertUnixTimestamp(flag.Arg(0))
@@ -75,10 +76,22 @@ func convertUnixTimestamp(str string) {
 	fmt.Printf("date: %v\tnano: %v\n", tm, nano)
 }
 
-func convertDateString(dateStr string) {
+func convertDateFromString(dateStr string) {
 	loc, err := time.LoadLocation("Asia/Shanghai")
 	if err != nil {
 		fmt.Printf("LoadLocation failed, %s\n", err)
+		return
+	}
+
+	if isDayFormat(dateStr) {
+		dateStr += " 00:00:00"
+		if isVerbose {
+			fmt.Printf("dateStr changed to: %s\n", dateStr)
+		}
+	}
+
+	if !isDayFormatWithTime(dateStr) {
+		fmt.Println("date string must be in format 'YYYY-MM-DD' or 'YYYY-MM-DD HH:MM:SS'")
 		return
 	}
 
@@ -88,13 +101,38 @@ func convertDateString(dateStr string) {
 		return
 	}
 
-	fmt.Printf("time:\n\t%s\n", t)
-	fmt.Printf("unix:\n\t%d\n", t.Unix())
+	displayTime(t)
+}
+
+func isDayFormat(dateStr string) bool {
+	isDay, err := regexp.MatchString(`^\d{4}-\d{2}-\d{2}$`, dateStr)
+	if err != nil {
+		fmt.Printf("regexp match failed, %s\n", err)
+		return false
+	}
+
+	return isDay
+}
+
+func isDayFormatWithTime(dateStr string) bool {
+	isFull, err := regexp.MatchString(`^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$`, dateStr)
+	if err != nil {
+		fmt.Printf("regexp match failed, %s\n", err)
+		return false
+	}
+
+	return isFull
 }
 
 func printNow() {
-	ts := time.Now()
-	fmt.Printf("\nnow:\n%s\nts: %d\n", ts, ts.Unix())
+	t := time.Now()
+	displayTime(t)
+}
+
+// displayTime prints the time in a formatted way
+func displayTime(t time.Time) {
+	fmt.Printf("time:\n\t%s\n", t)
+	fmt.Printf("unix:\n\t%d\n", t.Unix())
 }
 
 func readFromStdin() {
